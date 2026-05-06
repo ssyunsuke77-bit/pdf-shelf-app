@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>PDF Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { margin: 0; background: #333; }
+  #viewer { width: 100vw; height: 100vh; overflow: auto; }
+  canvas { display: block; margin: 8px auto; background: #fff; }
+</style>
+</head>
+<body>
+
+<div id="viewer"></div>
+
+<script type="module">
+  import * as pdfjsLib from "./pdfjs/pdf.mjs";
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "./pdfjs/pdf.worker.mjs";
+
+  const params = new URLSearchParams(location.search);
+  const file = "pdfs/" + params.get("file");
+
+  const loadingTask = pdfjsLib.getDocument(file);
+  loadingTask.promise.then(pdf => {
+    const viewer = document.getElementById("viewer");
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      pdf.getPage(pageNum).then(page => {
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        viewer.appendChild(canvas);
+        page.render({ canvasContext: ctx, viewport });
+      });
+    }
+  });
+</script>
+
+</body>
+</html>

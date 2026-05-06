@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>PDF 本棚</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head><link rel="manifest" href="manifest.json">
+
+<body>
+
+<h1>PDF 本棚</h1>
+
+<!-- 🔍 検索バー -->
+<input id="search" placeholder="検索（タイトル・カテゴリ）">
+
+<!-- 📂 カテゴリ選択 -->
+<select id="category">
+  <option value="">すべて</option>
+  <option value="災害">災害</option>
+  <option value="輸液">輸液</option>
+  <option value="精神科">精神科</option>
+</select>
+
+<div id="pdfList"></div>
+
+
+<script type="module">
+  import { generateThumbnail } from "./thumbnail-generator.js";
+  import { pdfList } from "./pdf-list.js";
+
+  const container = document.getElementById("pdfList");
+  const searchInput = document.getElementById("search");
+  const categorySelect = document.getElementById("category");
+
+  function renderList() {
+    const keyword = searchInput.value.toLowerCase();
+    const category = categorySelect.value;
+
+    container.innerHTML = "";
+
+    pdfList
+      .filter(pdf => {
+        const matchKeyword =
+          pdf.title.toLowerCase().includes(keyword) ||
+          pdf.category.toLowerCase().includes(keyword);
+
+        const matchCategory =
+          category === "" || pdf.category === category;
+
+        return matchKeyword && matchCategory;
+      })
+      .forEach(async pdf => {
+        const thumbKey = "thumb-" + pdf.file;
+        let thumb = localStorage.getItem(thumbKey);
+
+        if (!thumb) {
+          thumb = await generateThumbnail("pdfs/" + pdf.file, thumbKey);
+        }
+
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <img src="${thumb}" width="120">
+          <p>${pdf.title}</p>
+          <small>${pdf.category}</small>
+        `;
+        div.onclick = () => {
+          location.href = `viewer.html?file=${pdf.file}`;
+        };
+        container.appendChild(div);
+      });
+  }
+
+  searchInput.oninput = renderList;
+  categorySelect.onchange = renderList;
+
+  renderList();
+</script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+</body>
+</html>
